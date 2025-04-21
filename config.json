@@ -1,0 +1,11 @@
+{
+    "monitor_paths": [
+        "D:\\ENGINEERING NOTES\\8th sem\\Internship\\qtest\\Hello"
+    ],
+    "excluded_extensions": [
+        ".log",
+        ".tmp"
+    ],
+    "hash_algo": "sha256",
+    "scan_interval": 60
+}

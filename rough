@@ -1,0 +1,158 @@
+  "monitor_paths" : [
+   "D:/ENGINEERING NOTES/8th sem/Internship/qtest"
+  ],
+
+
+
+  import json
+from pathlib import Path
+from utils import scan_directory
+
+CONFIG_PATH = "config.json"
+
+def get_baseline_path(folder_path):
+    safe_name = folder_path.replace(":", "").replace("\\", "_").replace("/", "_")
+    return f"baseline_{safe_name}.json"
+
+
+def load_config():
+    with open(CONFIG_PATH) as f:
+        return json.load(f)
+
+def load_baseline(path):
+    if Path(path).exists():
+        with open(path) as f:
+            return json.load(f)
+    return {}
+
+def save_baseline(data, path):
+    with open(path, 'w') as f:
+        json.dump(data, f, indent=4)
+
+
+def detect_changes(current, baseline):
+    changes = []
+    for path, meta in current.items():
+        if path not in baseline:
+            changes.append(f"[NEW FILE] {path}")
+        else:
+            if baseline[path]["hash"] != meta["hash"]:
+                changes.append(f"[MODIFIED CONTENT] {path} (Last modified: {meta['last_modified']})")
+    for path in baseline:
+        if path not in current:
+            changes.append(f"[DELETED] {path}")
+    return changes
+
+
+# def main():
+#     config = load_config()
+#     all_current_hashed = {}
+#
+#     user_path = input("Enter the full path of the directory to monitor").strip()
+#
+#     if not Path(user_path).exists():
+#         print("The path already exists")
+#         return
+#
+#     for path in config["monitor_paths"]:
+#         all_current_hashed.update(scan_directory(
+#             path, config["excluded_extensions"], config["hash_algo"]
+#         ))
+#
+#     baseline = load_baseline()
+#
+#     if not baseline:
+#         print("[+] No baseline found. Saving current state.")
+#         save_baseline(all_current_hashed)
+#     else:
+#         print("[*] Comparing with baseline...")
+#         changes = detect_changes(all_current_hashed, baseline)
+#         if changes:
+#             for c in changes:
+#                 print("!!", c)
+#         else:
+#             print("[✓] No changes detected")
+
+
+# def main():
+#     # Ask the user for the directory to monitor
+#     user_path = input("Enter the full path of the directory to monitor: ").strip()
+#
+#     if not Path(user_path).exists():
+#         print("❌ The path does not exist. Please check and try again.")
+#         return
+#
+#     config = load_config()
+#
+#     # Override config path with user input
+#     config["monitor_paths"] = [user_path]
+#
+#     all_current_hashed = {}
+#
+#     for path in config["monitor_paths"]:
+#         all_current_hashed.update(scan_directory(
+#             path, config["excluded_extensions"], config["hash_algo"]
+#         ))
+#
+#     baseline = load_baseline()
+#
+#     if not baseline:
+#         print("[+] No baseline found. Saving current state.")
+#         save_baseline(all_current_hashed)
+#     else:
+#         print("[*] Comparing with baseline...")
+#         changes = detect_changes(all_current_hashed, baseline)
+#         if changes:
+#             for c in changes:
+#                 print("!!", c)
+#         else:
+#             print("[✓] No changes detected")
+
+def main():
+    config = load_config()
+
+    print("\n--- File Integrity Monitor ---")
+    print("1. Use existing monitored paths from config")
+    print("2. Enter a new path to monitor")
+    print()
+    choice = input("Select an option (1 or 2): ").strip()
+
+    if choice == "1":
+        monitor_paths = config["monitor_paths"]
+        baseline_path = get_baseline_path(monitor_paths[0])
+        print(f"[✓] Using paths from config: {monitor_paths}")
+    elif choice == "2":
+        user_path = input("Enter the full path of the directory to monitor: ").strip()
+        if not Path(user_path).exists():
+            print("❌ The path does not exist. Please check and try again.")
+            return
+        monitor_paths = [user_path]
+        baseline_path = get_baseline_path(monitor_paths[0])
+
+    else:
+        print("❌ Invalid choice.")
+        return
+
+    all_current_hashed = {}
+    for path in monitor_paths:
+        all_current_hashed.update(scan_directory(
+            path, config["excluded_extensions"], config["hash_algo"]
+        ))
+
+    baseline = load_baseline(baseline_path)
+
+    if not baseline:
+        print("[+] No baseline found. Saving current state.")
+        save_baseline(all_current_hashed, baseline_path)
+    else:
+        print("[*] Comparing with baseline...")
+        changes = detect_changes(all_current_hashed, baseline)
+        if changes:
+            for c in changes:
+                print("!!", c)
+        else:
+            print("[✓] No changes detected")
+
+
+if __name__ == "__main__":
+    main()

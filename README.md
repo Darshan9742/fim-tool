@@ -21,7 +21,7 @@ A lightweight, customizable, and user-friendly CLI-based File Integrity Monitori
 
 - **Language**: Python 3.x
 - **Hashing**: SHA-256 from `hashlib`
-- **OS Integration**: `os`, `stat`, `threading`
+- **OS Integration**: `os`, `stat`
 - **Data Handling**: JSON files for saving path info and baselines
 - **CLI Interaction**: Built-in input/output, cross-platform compatibility
 - 

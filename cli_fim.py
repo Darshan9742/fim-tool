@@ -1,7 +1,9 @@
 import json
 import argparse
+from utils import scan_directory, detect_changes
 from pathlib import Path
 from utils import scan_directory
+from config_manager import load_config, save_config
 from datetime import datetime
 
 CONFIG_PATH = "config.json"
@@ -10,37 +12,20 @@ def get_baseline_path(folder_path):
     safe_name = folder_path.replace(":", "").replace("\\", "_").replace("/", "_")
     return f"baseline_{safe_name}.json"
 
-def load_config():
-    if not Path(CONFIG_PATH).exists():
-        return {"monitor_paths": [], "excluded_extensions": [], "hash_algo": "sha256"}
-    with open(CONFIG_PATH) as f:
-        return json.load(f)
-
-def save_config(config):
-    with open(CONFIG_PATH, 'w') as f:
-        json.dump(config, f, indent=4)
-
 def load_baseline(path):
     if Path(path).exists():
         with open(path) as f:
             return json.load(f)
     return {}
 
+def scan_path(path):
+    if not Path(path).exists():
+        print(f"[!] Path does not exist: {path}")
+        return
+
 def save_baseline(data, path):
     with open(path, 'w') as f:
         json.dump(data, f, indent=4)
-
-def detect_changes(current, baseline):
-    changes = []
-    for path, meta in current.items():
-        if path not in baseline:
-            changes.append(f"[NEW FILE] {path}")
-        elif baseline[path]["hash"] != meta["hash"]:
-            changes.append(f"[MODIFIED CONTENT] {path} (Last modified: {meta['last_modified']})")
-    for path in baseline:
-        if path not in current:
-            changes.append(f"[DELETED] {path}")
-    return changes
 
 def update_config(new_path):
     config = load_config()

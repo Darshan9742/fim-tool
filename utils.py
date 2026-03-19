@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from datetime import datetime
 
-def calculat_hash(file_path, algo='sha256'):
+def calculate_hash(file_path, algo='sha256'):
     h = hashlib.new(algo)
     with open(file_path, 'rb') as f:
         while chunk := f.read(8192):
@@ -11,6 +11,19 @@ def calculat_hash(file_path, algo='sha256'):
     return h.hexdigest()
 
 from datetime import datetime
+
+def detect_changes(current, baseline):
+    changes = []
+    for path, meta in current.items():
+        if path not in baseline:
+            changes.append(f"[NEW FILE] {path}")
+        else:
+            if baseline[path]["hash"] != meta["hash"]:
+                changes.append(f"[MODIFIED CONTENT] {path} (Last modified: {meta['last_modified']})")
+    for path in baseline:
+        if path not in current:
+            changes.append(f"[DELETED] {path}")
+    return changes
 
 def scan_directory(path, exclude_exts, algo):
     file_info = {}
@@ -23,7 +36,7 @@ def scan_directory(path, exclude_exts, algo):
                 normalized_path = str(full_path.resolve())
                 stat = full_path.stat()
                 file_info[normalized_path] = {
-                    "hash": calculat_hash(full_path, algo),
+                    "hash": calculate_hash(full_path, algo),
                     "last_modified": datetime.fromtimestamp(stat.st_mtime).isoformat()
                 }
             except Exception as e:

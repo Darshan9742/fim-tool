@@ -1,17 +1,15 @@
 import json
 import time
+from utils import scan_directory, detect_changes
 from pathlib import Path
 from utils import scan_directory
+from config_manager import load_config
 
 CONFIG_PATH = "config.json"
 
 def get_baseline_path(folder_path):
     safe_name = folder_path.replace(":", "").replace("\\", "_").replace("/", "_")
     return f"baseline_{safe_name}.json"
-
-def load_config():
-    with open(CONFIG_PATH) as f:
-        return json.load(f)
 
 def load_baseline(path):
     if Path(path).exists():
@@ -138,18 +136,7 @@ def user_menu():
         else:
             print("[!] Invalid choice. Try again.")
 
-def detect_changes(current, baseline):
-    changes = []
-    for path, meta in current.items():
-        if path not in baseline:
-            changes.append(f"[NEW FILE] {path}")
-        else:
-            if baseline[path]["hash"] != meta["hash"]:
-                changes.append(f"[MODIFIED CONTENT] {path} (Last modified: {meta['last_modified']})")
-    for path in baseline:
-        if path not in current:
-            changes.append(f"[DELETED] {path}")
-    return changes
+
 
 def main():
     print("\n--- File Integrity Monitor ---")

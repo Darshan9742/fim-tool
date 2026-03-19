@@ -1,6 +1,6 @@
 {
     "monitor_paths": [
-
+        "D:\\ENGINEERING NOTES\\8th sem\\fim-tool\\test_folder"
     ],
     "excluded_extensions": [
         ".log",

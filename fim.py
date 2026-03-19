@@ -4,6 +4,7 @@ from utils import scan_directory, detect_changes
 from pathlib import Path
 from utils import scan_directory
 from config_manager import load_config
+from report_manager import generate_report, save_report
 
 CONFIG_PATH = "config.json"
 
@@ -12,14 +13,44 @@ def get_baseline_path(folder_path):
     return f"baseline_{safe_name}.json"
 
 def load_baseline(path):
-    if Path(path).exists():
-        with open(path) as f:
-            return json.load(f)
-    return {}
+    from utils import calculate_baseline_hash
+
+    if not Path(path).exists():
+        return {}
+
+    with open(path) as f:
+        data = json.load(f)
+
+    # 🔐 Verify integrity
+    meta_path = path + ".meta"
+
+    if Path(meta_path).exists():
+        with open(meta_path) as f:
+            meta = json.load(f)
+
+        current_hash = calculate_baseline_hash(data)
+
+        if meta.get("hash") != current_hash:
+            print("[🚨] WARNING: Baseline file may have been tampered!")
+
+    else:
+        print("[!] No integrity metadata found for baseline.")
+
+    return data
 
 def save_baseline(data, path):
+    import json
+    from utils import calculate_baseline_hash
+
     with open(path, 'w') as f:
         json.dump(data, f, indent=4)
+
+    # 🔐 Create meta file
+    meta_path = path + ".meta"
+    baseline_hash = calculate_baseline_hash(data)
+
+    with open(meta_path, 'w') as f:
+        json.dump({"hash": baseline_hash}, f)
 
 def update_config(new_path):
     config = load_config()
@@ -61,9 +92,16 @@ def background_scan_all(interval=60):
 
                 changes = detect_changes(current, baseline)
                 if changes:
-                    print(f"[⚠️] Changes detected in {path}:")
-                    for c in changes:
-                        print("   ", c)
+                    report = generate_report(path, changes)
+                    report_file = save_report(report)
+
+                    print(f"[⚠️] Changes detected in {path}. Report saved at: {report_file}")
+
+                    for change in changes:
+                        print("   ", change["type"], ":", change["file"])
+
+                    # 🔥 also update baseline (same fix as CLI)
+                    save_baseline(current, baseline_path)
                 else:
                     print(f"[✓] No changes in {path}.")
 
@@ -159,8 +197,15 @@ def main():
         print("[*] Comparing with baseline...")
         changes = detect_changes(all_current_hashed, baseline)
         if changes:
-            for c in changes:
-                print("!!", c)
+            report = generate_report(monitor_path, changes)
+            report_file = save_report(report)
+
+            print(f"[⚠️] Changes detected. Report saved at: {report_file}")
+
+            for change in changes:
+                print("!!", change["type"], ":", change["file"])
+
+            save_baseline(all_current_hashed, baseline_path)
         else:
             print("[✓] No changes detected")
 
